@@ -1,0 +1,8 @@
+.vscode
+.venv
+Manifest.toml
+cluster_output/
+*data/
+src/scripts/remote.log
+__pycache__
+
