@@ -395,9 +395,9 @@ def anim_bub(
 
 from IPython.display import HTML
 
-def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False):
+def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, colorbar=False):
     sub_folder =  folder+"{n}/".format(n=i+1)
-    a, figv = anim_fields(sub_folder, SAVE=SAVE, interval=100, skip=skip, size=4, fns=fns)
+    a, figv = anim_fields(sub_folder, SAVE=SAVE, interval=100, skip=skip, size=size, fns=fns, colorbar=colorbar)
     figv.tight_layout()
     display(HTML(a.to_jshtml()))
     plt.close(figv)
