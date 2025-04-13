@@ -15,8 +15,6 @@ def get_qw(param, mask=False):
     return q, w
 
 
-
-
 #########################################
 # Dynamic correlator and susceptibility #
 #########################################
