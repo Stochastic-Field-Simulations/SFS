@@ -1,5 +1,5 @@
 from numpy.fft import fft2,  fftfreq, fftshift, ifftshift, rfftfreq
-from src.py.utils import *
+from SFS.src.py.utils import *
 
 
 ##########################
