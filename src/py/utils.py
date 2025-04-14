@@ -82,7 +82,6 @@ def update_plot(l, d, field):
 
 def get_norm(field):
     mm = [np.min(field), np.max(field)]
-    # print(mm)
     d = (mm[1] - mm[0]) / 2
     if d is np.nan: d = 1.
     mm[0] -= d * .1

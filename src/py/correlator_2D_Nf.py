@@ -48,7 +48,7 @@ def get_data_single(seed, folder, start, sub='', M=None):
 
     return q, Cqvec, CqvecMasked, con, T, L, N, lim
 
-def get_data(folder, start=200, sub=''):
+def get_data(folder, start=0, sub=''):
     """ Get Cq and data from field data for multiple seeds"""
     n = count_files(folder)
 
@@ -100,8 +100,6 @@ def get_corr(folder, seed=None, start=0, M=None):
     Cq, q0 = average_q(Cqvec, q, N, L)
     return Cq, q0, (con, T, N, L)
  
-
-
 
 
 #############################
