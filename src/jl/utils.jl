@@ -1,4 +1,5 @@
 include("structs.jl")
+using Statistics
 
 
 ################################
@@ -132,6 +133,43 @@ function save_corr(fields, save_opt, m, tools::Tools{2}, mode)
 end
 
 
+function save_J(fields, save_opt, m, tools, mode)
+    @unpack folder = save_opt
+    @unpack p, sys, bplan = tools
+    @unpack d = sys
+    @unpack φ, ∇φ = fields
+    Nf = size(φ)[1]
+    for a in 1:Nf
+        for x in eachindex(p[1])
+            for y in eachindex(p[2])
+                r = (x, y)
+                for i in 1:d
+                    ∇φ[(a-1)*d+1 + i-1].k[x,y] = 1im * p[i][r[i]] * φ[a].k[x,y]
+                end
+            end
+        end
+    end
+
+    for ∇φi in ∇φ ∇φi.x = bplan * ∇φi.k end
+
+    J = zero(φ[1].x)
+    for i in 1:d
+        @. J += (φ[1].x * ∇φ[(2-1)*d+1 + i-1].x - φ[2].x * ∇φ[(1-1)*d+1 + i-1].x)^2
+    end
+    @. J = sqrt(J)
+
+    data_name = (@sprintf ("step_%05d") m)
+
+    file_name = folder * string("J")
+
+    jldopen(file_name, mode) do file file[data_name] = mean(J) end 
+
+    nothing
+end
+
+save_data_fns = (J = save_J, )
+
+
 function save_first(tools, con, fields, save_opt)
     @unpack folder, N_step, t_start = save_opt
     mode = "w"
@@ -148,6 +186,12 @@ function save_first(tools, con, fields, save_opt)
     if save_opt.SAVEFIELD save_field(fields, save_opt, 0, mode) end
     if save_opt.SAVECORR save_corr(fields, save_opt, 0, tools, mode) end
     if save_opt.N_write>0 write_stat(save_opt, 0) end
+
+    if :SAVEDATA in keys(save_opt)
+        for key in save_opt.SAVEDATA
+            save_data_fns[key](fields, save_opt, 0, tools, mode)
+        end
+    end
     nothing
 end
 
@@ -165,6 +209,12 @@ function check_and_save(fields, tools, i, save_opt)
 
         if save_opt.SAVEFIELD save_field(fields, save_opt, m, mode) end
         if save_opt.SAVECORR save_corr(fields, save_opt, m, tools, mode) end
+
+        if :SAVEDATA in keys(save_opt)
+            for key in save_opt.SAVEDATA
+                save_data_fns[key](fields, save_opt, m, tools, mode)
+            end
+        end
     end
     if  (N_write>0) && ((i%(N_step÷N_write))==0)  write_stat(save_opt, i) end
     nothing
