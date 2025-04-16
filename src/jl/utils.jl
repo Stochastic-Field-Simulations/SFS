@@ -176,7 +176,7 @@ function save_first(tools, con, fields, save_opt)
 
     if ! isdir(folder) mkpath(folder) end
     jldopen(folder*"parameters", "w") do file
-        file["tools"] = tools
+        file["tools"] = tools # This saves a lot more than necessary...
         file["con"] = con
     end 
 
