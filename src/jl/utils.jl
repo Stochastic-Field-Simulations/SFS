@@ -176,8 +176,8 @@ function save_first(tools, con, fields, save_opt)
 
     if ! isdir(folder) mkpath(folder) end
     jldopen(folder*"parameters", "w") do file
-        file["tools"] = tools # This saves a lot more than necessary...
         file["con"] = con
+        if :tools in save_opt.SAVEDATA file["tools"] = tools end
     end 
 
     data_name = (@sprintf ("TIME_%05d") 0)
@@ -189,7 +189,8 @@ function save_first(tools, con, fields, save_opt)
 
     if :SAVEDATA in keys(save_opt)
         for key in save_opt.SAVEDATA
-            save_data_fns[key](fields, save_opt, 0, tools, mode)
+            if key==:tools nothing
+            else save_data_fns[key](fields, save_opt, 0, tools, mode) end
         end
     end
     nothing
@@ -212,7 +213,8 @@ function check_and_save(fields, tools, i, save_opt)
 
         if :SAVEDATA in keys(save_opt)
             for key in save_opt.SAVEDATA
-                save_data_fns[key](fields, save_opt, m, tools, mode)
+                if key==:tools nothing
+                else save_data_fns[key](fields, save_opt, m, tools, mode) end
             end
         end
     end

@@ -37,18 +37,21 @@ def count_files(folder):
 def get_para(folder):
     para = h5py.File(folder+"parameters") 
     con = para["con"]
-    tools = para["tools"]
-    sys = tools["sys"]
-
-    d, N, L, T, dt = sys[["d", "N", "L", "T", "Δt"]]
     
-    # x is only saved as a reference in tools
-    x = para[tools["x"]]
-    # This reference again points to an array of references,
-    # which each points to the coordinate array for its dimension
-    xi = [np.array(para[x[i]]).reshape(N) for i in range(d)]
-    # we then blow this up for plotting purposes
-    xi = np.meshgrid(*xi)
+    try:     
+        tools = para["tools"]
+        sys = tools["sys"]
+        d, N, L, T, dt = sys[["d", "N", "L", "T", "Δt"]]
+        
+        # x is only saved as a reference in tools
+        x = para[tools["x"]]
+        # This reference again points to an array of references,
+        # which each points to the coordinate array for its dimension
+        xi = [np.array(para[x[i]]).reshape(N) for i in range(d)]
+        # we then blow this up for plotting purposes
+        xi = np.meshgrid(*xi)
+    except: # dirty hack for when tools is not saved
+        xi, d, N, L, T, dt = 0, 0, 0, 0, 0, 0
 
     return xi, d, N, L, T, dt, con
 
@@ -99,13 +102,17 @@ def plot(fig, path, SAVE, **kwargs):
 
 def anim_fields(
     folder, 
-    SAVE=False, seed=0, ax_lst=None, interval=1, rows=1,
+    SAVE=False, ax_lst=None, interval=1, rows=1, para_folder=None,
     name="vid", skip=1, fns=["varphi", ], size=6, lim=None, **kw
     ):
     fields = [get_field(folder, fn) for fn in fns] 
-    para = get_para(folder)
+    if para_folder is None: para = get_para(folder)
+    else: 
+        xi, d, N, L, T, dt = get_para(para_folder)[:-1]
+        con = get_para(folder)[-1]
+        para = xi, d, N, L, T, dt, con 
     return anim_fields_array(fields, para, 
-        SAVE=SAVE, seed=seed, ax_lst=ax_lst, interval=interval, 
+        SAVE=SAVE, ax_lst=ax_lst, interval=interval, 
         name=name, skip=skip, fns=fns, size=size, lim=lim, **kw
     )
 
@@ -157,7 +164,7 @@ def anim_many_fields(
 
 def anim_fields_array(
     fields, para, 
-    SAVE=False, seed=0, ax_lst=None, interval=1, cmap=cm.viridis,
+    SAVE=False, ax_lst=None, interval=1, cmap=cm.viridis,
     name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, sqr=False, **kw
     ):
     X, d, N, L, T, dt, con = para
@@ -182,7 +189,6 @@ def anim_fields_array(
         else: mm = lim
         if isinstance(cmap, list): color = cmap[i]
         else: color = cmap
-
         li = plot_field(ax[ax_lst[i]], d, X, fields[i][0], norm=mm, cmap=color, lw=1, **kw)
         l.append(li)
 
@@ -394,9 +400,9 @@ def anim_bub(
 
 from IPython.display import HTML
 
-def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, colorbar=False):
+def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, colorbar=False, para_folder=None):
     sub_folder =  folder+"{n}/".format(n=i+1)
-    a, figv = anim_fields(sub_folder, SAVE=SAVE, interval=100, skip=skip, size=size, fns=fns, colorbar=colorbar)
+    a, figv = anim_fields(sub_folder, SAVE=SAVE, interval=100, skip=skip, size=size, fns=fns, colorbar=colorbar, para_folder=para_folder)
     figv.tight_layout()
     display(HTML(a.to_jshtml()))
     plt.close(figv)
