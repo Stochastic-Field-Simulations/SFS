@@ -6,11 +6,11 @@ from SFS.src.py.utils import *
 # Correlation from field #
 ##########################
 
-def get_Cq(folder, seed=None, start=900, nn=1, sub='', M=None):
+def get_Cq(folder, seed=None, start=900, nn=1, sub='', M=None, para_folder=None):
     """ Get Cq from field data for sev"""
     run_folder = folder
     if not (seed is None): run_folder = folder + "{m}/".format(m = seed) + sub
-    X, d, N, L, T, dt, con = get_para(run_folder)
+    X, d, N, L, T, dt, con = get_para_folder(folder, para_folder)
 
     q1 = (fftfreq(N, L / (2 * np.pi * N)))
     q2 = (fftfreq(N, L / (2 * np.pi * N)))
@@ -37,9 +37,9 @@ def get_Cq(folder, seed=None, start=900, nn=1, sub='', M=None):
     return (q1, q2), (Cq) , con, T, L, N
 
 
-def get_data_single(seed, folder, start, sub='', M=None):
+def get_data_single(seed, folder, start, sub='', M=None, para_folder=None):
     """ Get Cq and data from field data for single seed"""
-    q, Cqvec, con, T, L, N = get_Cq(folder, seed=seed,  start=start, sub=sub, M=M)
+    q, Cqvec, con, T, L, N = get_Cq(folder, seed=seed,  start=start, sub=sub, M=M, para_folder=para_folder)
     mask = ((q[0]==0) & (q[1]==0))
     q2 = q[0]**2 + q[1]**2
     mask = mask | (Cqvec < 1e-15)
@@ -47,6 +47,7 @@ def get_data_single(seed, folder, start, sub='', M=None):
     lim = [np.min(np.abs(CqvecMasked)), np.max(np.abs(CqvecMasked))]
 
     return q, Cqvec, CqvecMasked, con, T, L, N, lim
+
 
 def get_data(folder, start=0, sub=''):
     """ Get Cq and data from field data for multiple seeds"""
@@ -94,13 +95,13 @@ def average_q(Cqvec, q, N, L):
 
     return Cq, q0
 
+
 def get_corr(folder, seed=None, start=0, M=None):
     """Get the correlation function from field"""
     q, Cqvec, CqvecMasked, con, T, L, N, lim = get_data_single(seed, folder, start, M=M)
     Cq, q0 = average_q(Cqvec, q, N, L)
     return Cq, q0, (con, T, N, L)
  
-
 
 #############################
 # Correlation from saved Cq #
@@ -115,10 +116,11 @@ def get_corr_saved(folder):
         [[[[Ctpab[0] + Ctpab[1] * 1j for Ctpab in Ctpa] for Ctpa in Ctp] for Ctp in Ct] for Ct in C]
         )
 
-def get_Cq_saved(folder, seed=None, sub=''):
+
+def get_Cq_saved(folder, seed=None, sub='', para_folder=None):
     run_folder = folder
     if not (seed is None): run_folder = folder + "{m}/".format(m = seed) + sub
-    X, d, N, L, T, dt, con = get_para(run_folder)
+    X, d, N, L, T, dt, con = get_para_folder(folder, para_folder)
 
     qrange = (0, np.pi * (N + 1)/ L)
     q0 = rfftfreq(N, L / (2 * np.pi * N))

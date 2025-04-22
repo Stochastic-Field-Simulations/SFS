@@ -2,17 +2,22 @@ import h5py
 import numpy as np
 from pathlib import Path
 
+import matplotlib as mp
 from matplotlib import pyplot as plt
 from matplotlib import cm, colors
-import matplotlib as mp
 from matplotlib.animation import FuncAnimation as FA
 from matplotlib.colors import LinearSegmentedColormap
+from IPython.display import HTML
 
 plt.rc("font", family="serif", size=20)
 plt.rc("mathtext", fontset="cm")
 plt.rc("lines", lw=2)
 plt.rc("axes", grid=False)
 plt.rc("grid", linestyle="--", alpha=1)
+
+uni_to_asc = {
+    "varphi" : "φ", "varphi_1" : "φ_1", "varphi_2" : "φ_2", "varphi_3" : "φ_3", "varphi_4" : "φ_4"
+    }
 
 
 def creat_map(name, color, alpha):
@@ -26,8 +31,8 @@ def creat_map(name, color, alpha):
 creat_map("blue", (.2, .2, .8), .8)
 creat_map("red", (.8, .2, .2), .8)
 
-# Load data
 
+# Load data
 
 def count_files(folder):
     path = Path(folder)
@@ -55,17 +60,17 @@ def get_para(folder):
 
     return xi, d, N, L, T, dt, con
 
-uni_to_asc = {
-    "varphi" : "φ", "varphi_1" : "φ_1", "varphi_2" : "φ_2", "varphi_3" : "φ_3", "varphi_4" : "φ_4"
-    }
+
 def get_field(folder, fn):
     if fn in uni_to_asc.keys(): fn = uni_to_asc[fn]
     data = h5py.File(folder+fn)
     return np.array([data[k] for k in data.keys()])
 
+
 def get_time(folder):
     times = h5py.File(folder+"TIME")
     return np.array([times[k][()] for k in times.keys()])
+
 
 # Plotting
 
@@ -83,6 +88,7 @@ def update_plot(l, d, field):
     if d==1: return l.set_ydata(field)
     elif d==2: return l.set_array(field.ravel())
 
+
 def get_norm(field):
     mm = [np.min(field), np.max(field)]
     d = (mm[1] - mm[0]) / 2
@@ -91,13 +97,23 @@ def get_norm(field):
     mm[1] += d * .1
     return mm
 
+
 def plot_anim(anim, path, SAVE, **kwargs):
     if SAVE: print("Saving..."); anim.save(path, **kwargs)
     else: plt.show()
 
+
 def plot(fig, path, SAVE, **kwargs):
     if SAVE: fig.savefig(path, **kwargs)
     else: plt.show()
+
+
+def get_para_folder(folder, para_folder):
+    if para_folder is None: return get_para(folder)
+    else: 
+        xi, d, N, L, T, dt = get_para(para_folder)[:-1]
+        con = get_para(folder)[-1]
+        return xi, d, N, L, T, dt, con 
 
 
 def anim_fields(
@@ -106,15 +122,12 @@ def anim_fields(
     name="vid", skip=1, fns=["varphi", ], size=6, lim=None, **kw
     ):
     fields = [get_field(folder, fn) for fn in fns] 
-    if para_folder is None: para = get_para(folder)
-    else: 
-        xi, d, N, L, T, dt = get_para(para_folder)[:-1]
-        con = get_para(folder)[-1]
-        para = xi, d, N, L, T, dt, con 
+    para = get_para_folder(folder, para_folder)
     return anim_fields_array(fields, para, 
         SAVE=SAVE, ax_lst=ax_lst, interval=interval, 
         name=name, skip=skip, fns=fns, size=size, lim=lim, **kw
     )
+
 
 def anim_many_fields(
     folders,
@@ -161,6 +174,7 @@ def anim_many_fields(
     a = FA(fig, anim, interval=interval, frames=M//skip)
 
     return a, fig
+
 
 def anim_fields_array(
     fields, para, 
@@ -282,7 +296,6 @@ def anim_fields_defect(
     plot_anim(a, name,  SAVE, **kw)
 
 
-
 def anim_1D(
     folder, SAVE=False, seed=0, ax_lst=None, interval=1, 
     name="vid", skip=1, fns=["varphi", ], M=None, **kw
@@ -359,7 +372,12 @@ def anim_bub(
     fig, ax = plt.subplots(1, Nax, figsize=(size*Nax*ar + 1, size))
     ax = np.atleast_1d(ax)
 
-    fig.suptitle("$\\mathcal{C}_{1 \\rightarrow 2}"+"={},".format(-con["α"][0]*con["r"][1] / 2 ) + "\\, \\mathcal{C}_{2 \\rightarrow 1}"+"={}".format(-con["α"][1]*con["r"][0] / 2 ) + "$")
+    fig.suptitle(
+        "$\\mathcal{C}_{1 \\rightarrow 2}"+"={},".format(
+            -con["α"][0]*con["r"][1] / 2 ) \
+            + "\\, \\mathcal{C}_{2 \\rightarrow 1}"\
+            +"={}".format(-con["α"][1]*con["r"][0] / 2 ) + "$"
+            )
 
     l = []
     cmaps = [cm.Reds, cm.Blues, cm.viridis_r]
@@ -371,10 +389,13 @@ def anim_bub(
         mm = get_norm(fields[i])
         y = np.roll(fields[i][0], shift, axis=1)
         if fns[i][:6]=='varphi': y = np.ma.masked_array(y, y<0.)
-        li = plot_field(ax[ax_lst[i]], d, X, y, norm=mm, lw=1, alpha=alphas[i], cmap=cmaps[i], colorbar=(i==2), zorder=zorder[i], label=labels[i])
+        li = plot_field(
+            ax[ax_lst[i]], d, X, y, 
+            norm=mm, lw=1, alpha=alphas[i], cmap=cmaps[i], 
+            colorbar=(i==2), zorder=zorder[i], label=labels[i]
+            )
         # if i==3: ax.figure.colorbar(li, ax=ax)
         l.append(li)
-
 
     smooth = 1
     def anim(n):
@@ -397,8 +418,6 @@ def anim_bub(
     if SAVE: plot_anim(a, name,  SAVE, **kw)
     return a, fig
 
-
-from IPython.display import HTML
 
 def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, colorbar=False, para_folder=None):
     sub_folder =  folder+"{n}/".format(n=i+1)
