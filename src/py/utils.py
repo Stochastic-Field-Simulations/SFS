@@ -419,9 +419,9 @@ def anim_bub(
     return a, fig
 
 
-def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, colorbar=False, para_folder=None):
+def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, **kw):
     sub_folder =  folder+"{n}/".format(n=i+1)
-    a, figv = anim_fields(sub_folder, SAVE=SAVE, interval=100, skip=skip, size=size, fns=fns, colorbar=colorbar, para_folder=para_folder)
+    a, figv = anim_fields(sub_folder, SAVE=SAVE, interval=100, skip=skip, size=size, fns=fns, **kw)
     figv.tight_layout()
     display(HTML(a.to_jshtml()))
     plt.close(figv)
