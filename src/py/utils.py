@@ -362,7 +362,6 @@ def anim_bub(
 
     fields = [get_field(folder, fn) for fn in fns]
     if M is None: M = len(fields[0])
-    print(M)
     Nf = len(fns)
 
     if ax_lst is None: ax_lst = [i for i in range(Nf)]
