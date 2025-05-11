@@ -99,7 +99,7 @@ def get_norm(field):
 
 
 def plot_anim(anim, path, SAVE, **kwargs):
-    if SAVE: print("Saving..."); anim.save(path, **kwargs)
+    if SAVE: print("Saving..."); anim.save(path)
     else: plt.show()
 
 
@@ -418,9 +418,11 @@ def anim_bub(
     return a, fig
 
 
-def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, **kw):
+def vid_notebook(folder, i, skip=10, fns=["varphi", ], SAVE=False, size=4, name='vid', **kw):
     sub_folder =  folder+"{n}/".format(n=i+1)
     a, figv = anim_fields(sub_folder, SAVE=SAVE, interval=100, skip=skip, size=size, fns=fns, **kw)
+    name = "fig/" + name + ".mp4"
+    if SAVE: plot_anim(a, name,  SAVE, **kw)
     figv.tight_layout()
     display(HTML(a.to_jshtml()))
     plt.close(figv)
