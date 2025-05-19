@@ -98,7 +98,7 @@ def get_CX_av(num, folder):
     return (q, w), C, X, con, param
 
 
-def get_CX_Nf(seed, folder, get_K, Nf=2):
+def get_CX_Nf(seed, folder, get_K, Nf=2, conserved=False):
     run_folder = folder + "{m}/".format(m = seed)
     field = np.array([get_field(run_folder, "varphi_"+str(a+1)) for a in range(Nf)])
     phiqw = np.array([fftshift(fft2(field[a])) for a in range(Nf)])
@@ -119,6 +119,7 @@ def get_CX_Nf(seed, folder, get_K, Nf=2):
     Xqw = np.zeros((Nf, Nf, *np.shape(q)), dtype=np.complex128)
     K = get_K(field, con)
     Kqw = np.array([fftshift(fft2(K[a])) - q**2 * phiqw[a] for a in range(Nf)])
+    if conserved: Kqw = - q**2 * Kqw
     for a in range(Nf):
         for b in range(Nf):
             Xqw[a,b] = (phiqw[a] * np.conj(-1j*w*phiqw[b] - Kqw[b]))/(2*T) * L/N**2*TIME/M**2
@@ -132,12 +133,54 @@ def get_CX_Nf(seed, folder, get_K, Nf=2):
     return (q, w), Cqw, Xqw, con, param
 
 
-def get_CX_Nf_av(num, folder, get_K, Nf=2):
-    (q, w), C, X, con, param = get_CX_Nf(1, folder, get_K, Nf=Nf)
+def get_phi_Nf(seed, folder, Nf=2):
+    run_folder = folder + "{m}/".format(m = seed)
+    field = np.array([get_field(run_folder, "varphi_"+str(a+1)) for a in range(Nf)])
+    phiqw = np.array([fftshift(fft2(field[a])) for a in range(Nf)])
+    TIME = get_time(run_folder)[-1]
+    X, d, N, L, T, dt, con = get_para(run_folder)
+    M = len(phiqw[0])
+    return phiqw / L / TIME * (L/N)**2 * (TIME/M)**2
+
+def get_phi_Nf_av(num, folder, Nf=2):
+    phi = get_phi_Nf(1, folder, Nf=Nf)
     count = 1
 
     for i in range(1, num):
-        Ci, Xi = get_CX_Nf(i+1, folder, get_K, Nf=Nf)[1:3]
+        phi += get_phi_Nf(i+1, folder, Nf=Nf)
+        count += 1
+    phi = phi / count
+    
+    phi2 = np.zeros((Nf, Nf, *np.shape(phi)[1:]), dtype=phi.dtype)
+    for a in range(Nf):
+        for b in range(Nf):
+            phi2[a, b] = phi[a]*np.conj(phi[b])
+    
+    return phi2
+
+# def get_CX_Nf_av(num, folder, get_K, Nf=2):
+#     phi2 = get_phi_Nf_av(num, folder, Nf=Nf)
+
+#     (q, w), C, X, con, param = get_CX_Nf(1, folder, get_K, Nf=Nf)
+#     count = 1
+
+#     for i in range(1, num):
+#         Ci, Xi = get_CX_Nf(i+1, folder, get_K, Nf=Nf)[1:3] #- phi2
+#         C += Ci
+#         X += Xi
+#         count += 1
+        
+#     C = C / count
+#     X = X / count
+
+#     return (q, w), C, X, con, param
+
+def get_CX_Nf_av(num, folder, get_K, Nf=2, conserved=False):
+    (q, w), C, X, con, param = get_CX_Nf(1, folder, get_K, Nf=Nf, conserved=conserved)
+    count = 1
+
+    for i in range(1, num):
+        Ci, Xi = get_CX_Nf(i+1, folder, get_K, Nf=Nf, conserved=conserved)[1:3]
         C += Ci
         X += Xi
         count += 1
@@ -204,12 +247,14 @@ def plot_CXqw(C, X, q, w, param, wlim=None, qlim=None, size=12):
 
 def plot_Cqw_Nf(C, q, w, param, cm=cm.viridis, size=6, Nf=2):
     T, N, M, L, TIME = param
-    fig, ax = plt.subplots(Nf, Nf, figsize=(size*1.4, size), sharex=True, sharey=True)
+    fig, ax = plt.subplots(Nf, Nf, figsize=(size*1.4, size), sharex=True, sharey=True,  gridspec_kw=dict(hspace=0.0, wspace=0.0))
     lim = np.max(np.abs(C))
 
     for a in range(Nf):
         for b in range(Nf):
-            p = ax[a,b].pcolor(w, q, C[a,b], norm=colors.Normalize(-lim, lim), cmap=cm)
+            p = ax[a,b].pcolormesh(w.data, q.data, C[a,b], norm=colors.Normalize(-lim, lim), cmap=cm)
+
+            ax[a,b].set_ylim(np.min(q), np.max(q))
 
     ax[-1, 0].set_xlabel("$\\omega$")
     ax[-1, 0].set_ylabel("$q$")
@@ -224,12 +269,13 @@ def plot_abs_Nf(C, q, w, param, size=6, Nf=2):
     lim = np.array([np.min(C[C>0]), np.max(C)])
     norm = colors.LogNorm(*lim)
     T, N, M, L, TIME = param
-    fig, ax = plt.subplots(Nf, Nf, figsize=(size*1.4, size), sharex=True, sharey=True)
+    fig, ax = plt.subplots(Nf, Nf, figsize=(size*1.4, size), sharex=True, sharey=True, gridspec_kw=dict(hspace=0.0, wspace=0.0))
 
     for a in range(Nf):
         for b in range(Nf):
-            p = ax[a,b].pcolor(w, q, C[a,b], norm=norm)
-
+            p = ax[a,b].pcolormesh(w.data, q.data, C[a,b], norm=norm)
+            ax[a,b].set_ylim(np.min(q), np.max(q))
+            
     ax[-1, 0].set_xlabel("$\\omega$")
     ax[-1, 0].set_ylabel("$q$")
     
