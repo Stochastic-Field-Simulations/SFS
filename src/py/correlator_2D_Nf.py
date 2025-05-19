@@ -120,7 +120,7 @@ def get_corr_saved(folder):
 def get_Cq_saved(folder, seed=None, sub='', para_folder=None):
     run_folder = folder
     if not (seed is None): run_folder = folder + "{m}/".format(m = seed) + sub
-    X, d, N, L, T, dt, con = get_para_folder(folder, para_folder)
+    X, d, N, L, T, dt, con = get_para_folder(run_folder, para_folder)
 
     qrange = (0, np.pi * (N + 1)/ L)
     q0 = rfftfreq(N, L / (2 * np.pi * N))
