@@ -200,7 +200,9 @@ def anim_fields_array(
     l = []
     for i in range(Nf):
         if (lim is None): mm = get_norm(fields[i])
-        else: mm = lim
+        else: 
+            if np.size(lim)==2: mm = lim
+            else: mm = lim[i]
         if isinstance(cmap, list): color = cmap[i]
         else: color = cmap
         li = plot_field(ax[ax_lst[i]], d, X, fields[i][0], norm=mm, cmap=color, lw=1, **kw)
