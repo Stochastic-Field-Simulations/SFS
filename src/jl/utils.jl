@@ -252,9 +252,10 @@ function write_stat(save_opt, i)
     left = "Expected time left:\n"* tleft  * "\n"
 
     name = "status.txt"
-    if :stat_path in keys(stave_opt) 
-        path = save_opt.stat_path*name
-    else 
+    if :stat_path in keys(save_opt)
+        # This folder must be created manually
+        path = save_opt.stat_path*"_"*name
+    else
         path = save_opt.folder*name
     end
 
