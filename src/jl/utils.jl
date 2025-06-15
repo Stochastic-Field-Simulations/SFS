@@ -157,13 +157,9 @@ function save_J(fields, save_opt, m, tools, mode)
         @. J += (φ[1].x * ∇φ[(2-1)*d+1 + i-1].x - φ[2].x * ∇φ[(1-1)*d+1 + i-1].x)^2
     end
     @. J = sqrt(J)
-
     data_name = (@sprintf ("step_%05d") m)
-
     file_name = folder * string("J")
-
     jldopen(file_name, mode) do file file[data_name] = mean(J) end 
-
     nothing
 end
 
@@ -234,7 +230,7 @@ end
 
 
 function write_stat(save_opt, i)
-    @unpack N_step, folder, t_start = save_opt
+    @unpack N_step, t_start = save_opt
     format = "dd-mm-yyyy \nHH:MM:SS"
     progress = i / N_step
     
@@ -256,7 +252,12 @@ function write_stat(save_opt, i)
     left = "Expected time left:\n"* tleft  * "\n"
 
     name = "status.txt"
-    path =  folder*name
+    if :stat_path in keys(save_opt)
+        # This folder must be created manually
+        path = save_opt.stat_path*"_"*name
+    else
+        path = save_opt.folder*name
+    end
 
     write(path, stat * first * last * bar * run * left)
 end
