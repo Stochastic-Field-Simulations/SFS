@@ -89,8 +89,10 @@ def update_plot(l, d, field):
     elif d==2: return l.set_array(field.ravel())
 
 
-def get_norm(field):
+def get_norm(field,norm_last=False):
     mm = [np.min(field), np.max(field)]
+    # If we want to set the norm by the last (in time) values
+    if norm_last: mm = [np.min(field[-1]), np.max(field[-1])]
     d = (mm[1] - mm[0]) / 2
     if d is np.nan: d = 1.
     mm[0] -= d * .1
@@ -132,7 +134,7 @@ def anim_fields(
 def anim_many_fields(
     folders,
     SAVE=False, seed=0, ax_lst=None, interval=50, cmap=cm.viridis, rows=1,
-    name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, **kw
+    name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, norm_last=False, **kw
     ):
 
     fields_arr = [[get_field(folder, fn) for fn in fns] for folder in folders] 
@@ -153,7 +155,7 @@ def anim_many_fields(
     for k in range(nn):
         fields = fields_arr[k]
         for i in range(Nf):
-            if (lim is None): mm = get_norm(fields[i])
+            if (lim is None): mm = get_norm(fields[i],norm_last=norm_last)
             else: mm = lim
             if isinstance(cmap, list): color = cmap[i]
             else: color = cmap
@@ -178,7 +180,7 @@ def anim_many_fields(
 
 def anim_fields_array(
     fields, para, 
-    SAVE=False, ax_lst=None, interval=1, cmap=cm.viridis,
+    SAVE=False, ax_lst=None, interval=1, cmap=cm.viridis, norm_last=False,
     name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, sqr=False, **kw
     ):
     X, d, N, L, T, dt, con = para
@@ -199,7 +201,7 @@ def anim_fields_array(
 
     l = []
     for i in range(Nf):
-        if (lim is None): mm = get_norm(fields[i])
+        if (lim is None): mm = get_norm(fields[i], norm_last=norm_last,)
         else: 
             if np.size(lim)==2: mm = lim
             else: mm = lim[i]
