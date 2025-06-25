@@ -46,7 +46,8 @@ function save_corr(fields, save_opt, m, tools::Tools{1}, mode)
     f1 = fpf * fields[name][i].x
     p = tools.p[1]
 
-    C = zeros(typeof(f1[1]), (n_fields, n_fields, size(p)...) )
+    if n_fields==1 C = zeros(typeof(f1[1]), (size(p)...) )
+    else C = zeros(typeof(f1[1]), (n_fields, n_fields, size(p)...) ) end
 
     for (name_a, a) in itr_name
         for (name_b, b) in itr_name
