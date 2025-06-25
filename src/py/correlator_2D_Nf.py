@@ -128,7 +128,7 @@ def get_Cq_saved(folder, seed=None, sub='', para_folder=None, Nf=2):
     X, d, N, L, T, dt, con = get_para_folder(run_folder, para_folder)
 
     qrange = (0, np.pi * (N + 1)/ L)
-    q0 = rfftfreq(N, L / (2 * np.pi * N))
+    q0 = rfftfreq(N, L  / (2 * np.pi * N)) * N/L
 
     Cq = get_corr_saved(run_folder, Nf)
             
