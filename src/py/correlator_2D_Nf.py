@@ -103,35 +103,3 @@ def get_corr(folder, seed=None, start=0, M=None):
     return Cq, q0, (con, T, N, L)
  
 
-#############################
-# Correlation from saved Cq #
-#############################
-
-def get_corr_saved(folder, Nf=2, d=2):
-    """Get the correlation function from saved Cabq"""
-    #! Fix this...
-    if d==1: data = h5py.File(folder+"Cab")
-    else: data = h5py.File(folder+"Cabq")
-    keys = [k for k in data.keys()][1:]
-    C = np.array([data[k] for k in keys])
-    if Nf==1:
-        return np.array(
-            [[Ctp[0] + Ctp[1] * 1j for Ctp in Ct] for Ct in C]
-            )
-    else:
-        return np.array(
-            [[[[Ctpab[0] + Ctpab[1] * 1j for Ctpab in Ctpa] for Ctpa in Ctp] for Ctp in Ct] for Ct in C]
-            )
-
-
-def get_Cq_saved(folder, seed=None, sub='', para_folder=None, Nf=2):
-    run_folder = folder
-    if not (seed is None): run_folder = folder + "{m}/".format(m = seed) + sub
-    X, d, N, L, T, dt, con = get_para_folder(run_folder, para_folder)
-
-    qrange = (0, np.pi * (N + 1)/ L)
-    q0 = rfftfreq(N, L  / (2 * np.pi * N)) #* N/L
-
-    Cq = get_corr_saved(run_folder, Nf, d)
-            
-    return q0, Cq, con, T, L, N

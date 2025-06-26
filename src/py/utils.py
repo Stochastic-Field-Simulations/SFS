@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+from numpy.fft import rfftfreq
 from pathlib import Path
 
 import matplotlib as mp
@@ -7,7 +8,7 @@ from matplotlib import pyplot as plt
 from matplotlib import cm, colors
 from matplotlib.animation import FuncAnimation as FA
 from matplotlib.colors import LinearSegmentedColormap
-from IPython.display import HTML
+from IPython.display import HTML, display
 
 plt.rc("font", family="serif", size=20)
 plt.rc("mathtext", fontset="cm")
@@ -70,6 +71,17 @@ def get_field(folder, fn):
 def get_time(folder):
     times = h5py.File(folder+"TIME")
     return np.array([times[k][()] for k in times.keys()])
+
+def get_Cq_saved(folder, seed=None, sub='', para_folder=None):
+    if not (seed is None): folder += "{m}/".format(m = seed) + sub
+    X, d, N, L, T, dt, con = get_para_folder(folder, para_folder)
+    q0 = rfftfreq(N, L  / (2 * np.pi * N))
+    data = h5py.File(folder+"Cabq")
+    keys = [k for k in data.keys()][1:]
+    C = np.array([data[k] for k in keys])
+    Cq = np.array([[[[Ctpab[0] + Ctpab[1] * 1j for Ctpab in Ctpa] for Ctpa in Ctp] for Ctp in Ct] for Ct in C])
+            
+    return q0, Cq, con, T, L, N
 
 
 # Plotting

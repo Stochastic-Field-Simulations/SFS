@@ -1,7 +1,6 @@
 include("structs.jl")
 using Statistics
 
-
 ################################
 # Utilities for saving to disk #
 ################################
@@ -34,137 +33,61 @@ function save_field(fields, save_opt, m,  mode)
     nothing
 end
 
-function save_corr(fields, save_opt, m, tools::Tools{1}, mode)
-    @unpack save_names, folder = save_opt
-    itr_name = get_itr_names(save_names)
-    n_fields = length(itr_name)
 
-    fpf = tools.fplan
-    @unpack L, N, d = tools.sys
+function average_q!(f, fq, a, abs_p, p, ::Tools{1})
+    for i in eachindex(fq[a, :]) if (abs(f[i]) > 1e-20) fq[a, i] = f[i] end end
+end
 
-    name, i = itr_name[1]
-    f1 = fpf * fields[name][i].x
-    p = tools.p[1]
-
-    if n_fields==1 C = zeros(typeof(f1[1]), (size(p)...) )
-    else C = zeros(typeof(f1[1]), (n_fields, n_fields, size(p)...) ) end
-
-    for (name_a, a) in itr_name
-        for (name_b, b) in itr_name
-            fa = ( fpf * fields[name_a][a].x)
-            fb = ( fpf * fields[name_b][b].x)
-
-            if n_fields==1 @. C = fa * conj(fb) * (L/N^2)^d
-            else @. C[a,b,:] = fa * conj(fb) * (L/N^2)^d end
+function average_q!(f, fq, a, abs_p, p, ::Tools{2})
+    samples = zero(p)
+    for j in eachindex(f)
+        # find i so that p[indx[j]-1] < abs_p[j] <= p[indx[j]]
+        i = searchsortedlast(p, abs_p[j])
+        if (abs(f[j]) > 1e-20)
+            fq[a,i] += f[j]
+            samples[i] += 1
         end
     end
-
-    data_name = (@sprintf ("step_%05d") m)
-    file_name = folder * "Cab"
-    jldopen(file_name, mode) do file file[data_name] = C end 
+    mt = (samples .== 0) # Empty
+    @. fq[a,!mt] = fq[a,!mt] / samples[!mt]
 end
 
 
-function save_corr(fields, save_opt, m, tools::Tools{2}, mode)
-    #TODO: Remove fplan_full use ξ not C_vec, combine n_fields==1, C and f
+function save_corr(fields, save_opt, m, tools, mode)
     @unpack save_names, folder = save_opt
+    @unpack L, N, d = tools.sys
+    
     itr_name = get_itr_names(save_names)
     n_fields = length(itr_name)
-
-    fpf = tools.fplan_full
-    @unpack L, N, d = tools.sys
-
+    if d==1 fpf = tools.fplan
+    else fpf = tools.fplan_full end
     name, i = itr_name[1]
     f1 = fpf * fields[name][i].x
-    
-    C_vec = zeros(typeof(f1[1]), (size(f1)...) )
 
-    p       = tools.p[1]
-    p_full  = tools.p[2]
-    abs_p   = sqrt.((p_full .^2) .+ (p_full .^2)')
+    p = tools.p[1]
+    if d==1 abs_p = p
+    else abs_p = @. sqrt((tools.p[2]^2) + (tools.p[2]^2)') end
 
-    if n_fields==1 
-        C = zeros(typeof(f1[1]), size(p)... ) 
-        faq = zeros(typeof(f1[1]), size(p)... ) 
-    else
-        C = zeros(typeof(f1[1]), (n_fields, n_fields, size(p)...) ) 
-        faq = zeros(typeof(f1[1]), (n_fields, size(p)...) ) 
-    end
-
+    C       = zeros(typeof(f1[1]), (size(f1)...) )
+    Cabq    = zeros(typeof(f1[1]), (n_fields, n_fields, size(p)...) )
+    faq     = zeros(typeof(f1[1]), (n_fields, size(p)...) )
 
     for (name_a, a) in itr_name
         fa = ( fpf * fields[name_a][a].x) * (L/N)^d
-        samples = zero(p)
-        for j in eachindex(fa)
-            i = searchsortedlast(p, abs_p[j])
-            if (abs(fa[j]) > 1e-10)
-                if n_fields==1 faq[i] += fa[j]
-                else faq[a,i] += fa[j] end
-                samples[i] += 1
-            end
-        end
-        mt = (samples .== 0) # Empty
-        if n_fields==1 @. faq[!mt] = faq[!mt] / samples[!mt]
-        else @. faq[a,!mt] = faq[a,!mt] / samples[!mt] end
-
+        average_q!(fa, faq, a, abs_p, p, tools)
 
         for (name_b, b) in itr_name
-            fb = ( fpf * fields[name_b][b].x)
-            @. C_vec = fa * conj(fb) * (L/N^2)^d
-            samples = zero(p)
-            
-            for j in eachindex(C_vec)
-                # find i so that p[indx[j]-1] < abs_p[j] <= p[indx[j]]
-                i = searchsortedlast(p, abs_p[j])
-                if (abs(C_vec[j]) > 1e-20)
-                    if n_fields==1 C[i] += C_vec[j]
-                    else C[a,b,i] += C_vec[j] end
-                    samples[i] += 1
-                end
-            end
-            mt = (samples .== 0) # Empty
-            if n_fields==1 @. C[!mt] = C[!mt] / samples[!mt]
-            else @. C[a,b,!mt] = C[a,b,!mt] / samples[!mt] end
+            fb = ( fpf * fields[name_b][b].x) * (L/N)^d
+            @. C = fa * conj(fb) * (1/L)^d
+            ab = CartesianIndex(a,b)
+            average_q!(C, Cabq, ab, abs_p, p, tools)
         end
     end
 
     data_name = (@sprintf ("step_%05d") m)
     jldopen(folder * "φaq", mode) do file file[data_name] = faq end 
-    jldopen(folder * "Cabq", mode) do file file[data_name] = C end 
+    jldopen(folder * "Cabq", mode) do file file[data_name] = Cabq end 
 end
-
-
-function save_J(fields, save_opt, m, tools, mode)
-    @unpack folder = save_opt
-    @unpack p, sys, bplan = tools
-    @unpack d = sys
-    @unpack φ, ∇φ = fields
-    Nf = size(φ)[1]
-    for a in 1:Nf
-        for x in eachindex(p[1])
-            for y in eachindex(p[2])
-                r = (x, y)
-                for i in 1:d
-                    ∇φ[(a-1)*d+1 + i-1].k[x,y] = 1im * p[i][r[i]] * φ[a].k[x,y]
-                end
-            end
-        end
-    end
-
-    for ∇φi in ∇φ ∇φi.x = bplan * ∇φi.k end
-
-    J = zero(φ[1].x)
-    for i in 1:d
-        @. J += (φ[1].x * ∇φ[(2-1)*d+1 + i-1].x - φ[2].x * ∇φ[(1-1)*d+1 + i-1].x)^2
-    end
-    @. J = sqrt(J)
-    data_name = (@sprintf ("step_%05d") m)
-    file_name = folder * string("J")
-    jldopen(file_name, mode) do file file[data_name] = mean(J) end 
-    nothing
-end
-
-save_data_fns = (J = save_J, )
 
 
 function save_first(tools, con, fields, save_opt)
@@ -221,9 +144,7 @@ end
 
 
 function save_info(numbers, folder)
-    if ! isdir(folder)
-        mkpath(folder)
-    end
+    if ! isdir(folder) mkpath(folder) end
     jldopen(folder*"info", "w") do file
         file["numbers"] = numbers
     end
@@ -262,6 +183,48 @@ function write_stat(save_opt, i)
 
     write(path, stat * first * last * bar * run * left)
 end
+
+
+##########################
+# Additional Observalbes #
+##########################
+
+
+function save_J(fields, save_opt, m, tools::Tools{2}, mode)
+    #TODO: Implement in 2 dim
+    @unpack folder = save_opt
+    @unpack p, sys, bplan = tools
+    @unpack d = sys
+    @unpack φ, ∇φ = fields
+    Nf = size(φ)[1]
+    for a in 1:Nf
+        for x in eachindex(p[1])
+            for y in eachindex(p[2])
+                r = (x, y)
+                for i in 1:d
+                    ∇φ[(a-1)*d+1 + i-1].k[x,y] = 1im * p[i][r[i]] * φ[a].k[x,y]
+                end
+            end
+        end
+    end
+
+    for ∇φi in ∇φ ∇φi.x = bplan * ∇φi.k end
+
+    J = zero(φ[1].x)
+    for i in 1:d
+        # Spatial and species index contained in same index
+        # i counts over spatial dimension first, then 1, 2, over species
+        @. J += (φ[1].x * ∇φ[(2-1)*d+1 + i-1].x - φ[2].x * ∇φ[(1-1)*d+1 + i-1].x)^2
+        #     = (φ[1].x * ∇φ[d+i].x - φ[2].x * ∇φ[i].x)^2
+    end
+    @. J = sqrt(J)
+    data_name = (@sprintf ("step_%05d") m)
+    file_name = folder * string("J")
+    jldopen(file_name, mode) do file file[data_name] = mean(J) end 
+    nothing
+end
+
+const save_data_fns = (J = save_J, )
 
 
 ############################
