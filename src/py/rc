@@ -1,0 +1,27 @@
+axes.formatter.limits   : -5, 5
+errorbar.capsize        : 2
+figure.dpi              : 256
+figure.figsize          : 5.0, 3.5
+font.family             : sans-serif
+font.size               : 14
+font.weight             : normal
+image.cmap              : viridis
+legend.frameon          : True
+legend.handlelength     : 0.8
+legend.labelspacing     : 0.2
+legend.markerscale      : 1.0
+axes.grid               : False
+lines.linewidth         : 1.2
+lines.markersize        : 5
+savefig.bbox            : tight
+savefig.dpi             : 400
+savefig.format          : pdf
+savefig.transparent     : False
+savefig.pad_inches      : 0.025
+text.usetex             : True
+text.latex.preamble     : \usepackage{amsmath, bm}
+xtick.direction         : in
+xtick.minor.visible     : True
+ytick.direction         : in
+ytick.minor.visible     : True
+animation.html          : jshtml

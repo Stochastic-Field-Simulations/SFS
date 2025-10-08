@@ -10,11 +10,7 @@ from matplotlib.animation import FuncAnimation as FA
 from matplotlib.colors import LinearSegmentedColormap
 from IPython.display import HTML, display
 
-plt.rc("font", family="serif", size=20)
-plt.rc("mathtext", fontset="cm")
-plt.rc("lines", lw=2)
-plt.rc("axes", grid=False)
-plt.rc("grid", linestyle="--", alpha=1)
+plt.style.use("SFS/src/py/rc")
 
 uni_to_asc = {
     "varphi" : "φ", "varphi_1" : "φ_1", "varphi_2" : "φ_2", "varphi_3" : "φ_3", "varphi_4" : "φ_4"
@@ -31,6 +27,23 @@ def creat_map(name, color, alpha):
 
 creat_map("blue", (.2, .2, .8), .8)
 creat_map("red", (.8, .2, .2), .8)
+
+
+# Thanks Navdeep
+
+def logspaced(x, base = 1.2):
+    N = np.floor(np.log(len(x)) / np.log(base)).astype(int)
+    n = np.unique(np.floor(base**np.linspace(0, N, N))).astype(int) - 1
+    return x[n]
+
+def abc(axi):
+    alphabet = "abcdefghijklmnopqrstuvwxyz"
+    return ["\\textbf{(" + "{l}".format(l=l) + ")}" for (_, l) in zip(axi, alphabet)]
+
+def label(ax, x=0.06, y=1.08, letters=None):
+    letters = abc(ax) if letters is None else ["\\textbf{(" + "{l}".format(l=l) + ")}" for l in letters]
+    for (axi, l) in zip(ax, letters):
+        axi.text(x, y, l, ha="right", va="top", fontsize=15, transform=axi.transAxes)
 
 
 # Load data
