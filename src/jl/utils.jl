@@ -176,7 +176,7 @@ function write_stat(save_opt, i)
     name = "status.txt"
     if :stat_path in keys(save_opt)
         # This folder must be created manually
-        path = save_opt.stat_path*"_"*name
+        path = save_opt.stat_path*name
     else
         path = save_opt.folder*name
     end
@@ -313,3 +313,20 @@ function init_hom!(fields, tools, sys, bget_itr_namesφ)
         fields[:φ][i].k .= tools.fplan * fields[:φ][i].x
     end
 end 
+
+function init2fields!(fields, tools, con)
+    @unpack x, seed = tools
+    @unpack L, N, d = tools.sys
+    rng = MersenneTwister(seed)
+
+    dims = Tuple(N for _ in 1:d)
+    f1 = rand(rng, Float32, dims) .* 1.
+    f2 = rand(rng, Float32, dims) .* 1.
+    f1 = f1 .- mean(f1) .+ con[:bφ]
+    f2 = f2 .- mean(f2)
+    @. fields.φ[1].x = f1
+    @. fields.φ[2].x = f2
+    fields.φ[1].k = tools.fplan * fields.φ[1].x
+    fields.φ[2].k = tools.fplan * fields.φ[2].x
+end
+
