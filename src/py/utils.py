@@ -158,8 +158,9 @@ def anim_fields(
 
 def anim_many_fields(
     folders,
-    SAVE=False, seed=0, ax_lst=None, interval=50, cmap=cm.viridis, rows=1,
-    name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, norm_last=False, **kw
+    SAVE=False, seed=0, ax_lst=None, interval=50, cmap=cm.viridis, 
+    rows=1, name="vid", skip=1, fns=["varphi", ], size=6, lim=None, 
+    M=None, norm_last=False,  colorbar=False, **kw
     ):
 
     fields_arr = [[get_field(folder, fn) for fn in fns] for folder in folders] 
@@ -184,8 +185,10 @@ def anim_many_fields(
             else: mm = lim
             if isinstance(cmap, list): color = cmap[i]
             else: color = cmap
+            if isinstance(colorbar, list): cbar = colobar[i]
+            else: cbar = colorbar
 
-            li = plot_field(ax[k], d, X, fields[i][0], norm=mm, cmap=color, lw=1, **kw)
+            li = plot_field(ax[k], d, X, fields[i][0], norm=mm, cmap=color, lw=1, colorbar=cbar, **kw)
             l.append(li)
 
     def anim(n):
@@ -205,8 +208,8 @@ def anim_many_fields(
 
 def anim_fields_array(
     fields, para, 
-    SAVE=False, ax_lst=None, interval=1, cmap=cm.viridis, norm_last=False,
-    name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, sqr=False, **kw
+    SAVE=False, ax_lst=None, interval=1, cmap=cm.viridis, norm_last=False, name="vid", 
+    skip=1, fns=["varphi", ], size=6, lim=None, M=None, sqr=False, colorbar=False, **kw
     ):
     X, d, N, L, T, dt, con = para
     if M is None: M = len(fields[0])
@@ -232,7 +235,10 @@ def anim_fields_array(
             else: mm = lim[i]
         if isinstance(cmap, list): color = cmap[i]
         else: color = cmap
-        li = plot_field(ax[ax_lst[i]], d, X, fields[i][0], norm=mm, cmap=color, lw=1, **kw)
+        if isinstance(colorbar, list): cbar = colorbar[i]
+        else: cbar = colorbar
+
+        li = plot_field(ax[ax_lst[i]], d, X, fields[i][0], norm=mm, cmap=color, colorbar=cbar, lw=1, **kw)
         l.append(li)
 
     def anim(n):
