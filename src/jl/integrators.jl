@@ -66,7 +66,6 @@ function ETD!(fields::T1, tools::Tools, non_lin!::T2, con::T3, i::Int) where {T1
     end
 
     non_lin!(fields, con, tools)
-    mul!(f.k, fplan, f.x)
     if φ.conserved @. f.k = p2 * f.k end
 
     randn!(rng, ξ.k)
@@ -90,7 +89,6 @@ function ETDN!(fields::T1, tools::Tools, non_lin!::T2, con::T3, i::Int) where {T
     non_lin!(fields, con, tools)
 
     for i in axes(φ, 1)
-        mul!(f[i].k, fplan, f[i].x)
         if φ[i].conserved @. f[i].k = p2 * f[i].k end
 
         randn!(rng, ξ[i].k)
@@ -127,8 +125,6 @@ function first_step!(step::ETD2, fields::T1, tools::Tools, non_lin!::T2, con::T3
     for i in 1:m
         non_lin!(fields, con, tools)
 
-        mul!(f.k, fplan, f.x)
-
         randn!(rng, ξ.k)
         fix_corr!(ξ.k, tools)
         
@@ -151,21 +147,18 @@ function first_stepN!(step::ETD2, fields::T1, tools::Tools, non_lin!::T2, con::T
     @unpack φ, f, f3, ξ = fields
     @unpack fplan, bplan, rng, p2, step = tools
 
-    non_lin!(fields, con, tools)
-    copyto!(f3, f)
-
-    for i in 1:m
+    for j in 1:m
         non_lin!(fields, con, tools)
 
         for i in axes(φ, 1)
-            mul!(f[i].k, fplan, f[i].x)
-
             randn!(rng, ξ[i].k)
             fix_corr!(ξ[i].k, tools)
             
             if φ[i].conserved @. f[i].k = p2 * f[i].k end
-            take_step(step, fields, tools; i=i)
+            take_step(step1, fields, tools; i=i)
         end
+        
+        if j==1 copyto!(f3, f) end
     end
     return true
 end
