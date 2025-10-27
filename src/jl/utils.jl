@@ -314,6 +314,18 @@ function init_hom!(fields, tools, sys, bget_itr_namesφ)
     end
 end 
 
+function init!(fields, tools, con)
+    @unpack x, seed = tools
+    @unpack L, N, d = tools.sys
+    rng = MersenneTwister(seed)
+
+    dims = Tuple(N for d in 1:d)
+    f1 = rand(rng, Float32, dims) .* 1.
+    f1 = f1 .- mean(f1) .+ con[:bφ]
+    @. fields.φ.x = f1
+    fields.φ.k = tools.fplan * fields.φ.x
+end
+
 function init2fields!(fields, tools, con)
     @unpack x, seed = tools
     @unpack L, N, d = tools.sys

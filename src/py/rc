@@ -25,3 +25,4 @@ xtick.minor.visible     : True
 ytick.direction         : in
 ytick.minor.visible     : True
 animation.html          : jshtml
+animation.embed_limit   : 100
