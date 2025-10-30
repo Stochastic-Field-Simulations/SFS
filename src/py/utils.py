@@ -45,6 +45,35 @@ def label(ax, x=0.06, y=1.08, letters=None):
     for (axi, l) in zip(ax, letters):
         axi.text(x, y, l, ha="right", va="top", fontsize=15, transform=axi.transAxes)
 
+# Place ticklabels
+
+from matplotlib import ticker as mticker
+check = lambda e, labels: np.any(np.isclose(e, np.array(labels)))
+
+def set_sci_ticks_x(ax, m, M, labels):
+    """
+    Set scientifc ticks for log plots between 10^m and 10^M,
+    with labels given by 10^labels.
+    """
+    exps = np.linspace(m, M, M-m + 1)
+    labels = [r'$10^{%d}$' % int(e) if check(e, labels) else '' for e in exps]
+    ax.set_xticks(10**exps)
+    ax.xaxis.set_minor_locator(mticker.LogLocator(numticks=99, subs="auto"))
+    ax.set_xticklabels(labels)
+
+
+def set_sci_ticks_y(ax, m, M, labels):
+    """
+    Set scientifc ticks for log plots between 10^m and 10^M,
+    with labels given by 10^labels.
+    """
+    exps = np.linspace(m, M, M-m + 1)
+    labels = [r'$10^{%d}$' % int(e) if check(e, labels) else '' for e in exps]
+    ax.set_yticks(10**exps)
+    ax.yaxis.set_minor_locator(mticker.LogLocator(numticks=99, subs="auto"))
+    ax.set_yticklabels(labels)
+
+
 
 # Load data
 
@@ -94,7 +123,7 @@ def get_Cq_saved(folder, seed=None, sub='', para_folder=None):
     C = np.array([data[k] for k in keys])
     Cq = np.array([[[[Ctpab[0] + Ctpab[1] * 1j for Ctpab in Ctpa] for Ctpa in Ctp] for Ctp in Ct] for Ct in C])
             
-    return q0, Cq, con, T, L, N
+    return q0, Cq, con, T, L, N, dt
 
 
 # Plotting
