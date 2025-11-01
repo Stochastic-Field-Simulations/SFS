@@ -91,7 +91,10 @@ end
 
 
 function save_first(tools, con, fields, save_opt)
-    @unpack folder, N_step, t_start = save_opt
+    @unpack folder, N_step, N_save, t_start = save_opt
+    @assert N_save<=N_step
+    @assert N_step%N_save==0
+    
     mode = "w"
 
     if ! isdir(folder) mkpath(folder) end
