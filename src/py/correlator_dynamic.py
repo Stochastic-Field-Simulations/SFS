@@ -118,8 +118,8 @@ def get_CX_Nf(seed, folder, get_K, Nf=2, conserved=False):
             mask = (np.abs(Cqw[a, b])<1e-15) | mask
 
     Xqw = np.zeros((Nf, Nf, *np.shape(q)), dtype=np.complex128)
-    K = get_K(field, con)
-    Kqw = np.array([ fftshift(fft2(K[a]))*(L/N)*(TIME/M) - q**2*phiqw[a] for a in range(Nf) ])
+    K = fftshift(get_K(field, con, q, w, param))
+    Kqw = np.array([ K[a] - q**2*phiqw[a] for a in range(Nf) ])
     if conserved: Kqw = - q**2 * Kqw
     for a in range(Nf):
         for b in range(Nf):
