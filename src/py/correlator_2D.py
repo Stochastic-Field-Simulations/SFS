@@ -1,5 +1,5 @@
 from numpy.fft import fft2, ifft2, fftfreq, fftshift, ifftshift, rfftfreq
-from src_py.utils import *
+from SFS.src.py.utils import *
 
 
 def get_Cqvec(seed, folder, start=0, nn=1, sub=''):

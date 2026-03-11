@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+from numpy.fft import rfftfreq
 from pathlib import Path
 
 import matplotlib as mp
@@ -7,13 +8,9 @@ from matplotlib import pyplot as plt
 from matplotlib import cm, colors
 from matplotlib.animation import FuncAnimation as FA
 from matplotlib.colors import LinearSegmentedColormap
-from IPython.display import HTML
+from IPython.display import HTML, display
 
-plt.rc("font", family="serif", size=20)
-plt.rc("mathtext", fontset="cm")
-plt.rc("lines", lw=2)
-plt.rc("axes", grid=False)
-plt.rc("grid", linestyle="--", alpha=1)
+plt.style.use("SFS/src/py/rc")
 
 uni_to_asc = {
     "varphi" : "φ", "varphi_1" : "φ_1", "varphi_2" : "φ_2", "varphi_3" : "φ_3", "varphi_4" : "φ_4"
@@ -30,6 +27,52 @@ def creat_map(name, color, alpha):
 
 creat_map("blue", (.2, .2, .8), .8)
 creat_map("red", (.8, .2, .2), .8)
+
+
+# Thanks Navdeep
+
+def logspaced(x, base = 1.2):
+    N = np.floor(np.log(len(x)) / np.log(base)).astype(int)
+    n = np.unique(np.floor(base**np.linspace(0, N, N))).astype(int) - 1
+    return x[n]
+
+def abc(axi):
+    alphabet = "abcdefghijklmnopqrstuvwxyz"
+    return ["\\textbf{(" + "{l}".format(l=l) + ")}" for (_, l) in zip(axi, alphabet)]
+
+def label(ax, x=0.06, y=1.08, letters=None):
+    letters = abc(ax) if letters is None else ["\\textbf{(" + "{l}".format(l=l) + ")}" for l in letters]
+    for (axi, l) in zip(ax, letters):
+        axi.text(x, y, l, ha="right", va="top", fontsize=15, transform=axi.transAxes)
+
+# Place ticklabels
+
+from matplotlib import ticker as mticker
+check = lambda e, labels: np.any(np.isclose(e, np.array(labels)))
+
+def set_sci_ticks_x(ax, m, M, labels):
+    """
+    Set scientifc ticks for log plots between 10^m and 10^M,
+    with labels given by 10^labels.
+    """
+    exps = np.linspace(m, M, M-m + 1)
+    labels = [r'$10^{%d}$' % int(e) if check(e, labels) else '' for e in exps]
+    ax.set_xticks(10**exps)
+    ax.xaxis.set_minor_locator(mticker.LogLocator(numticks=99, subs="auto"))
+    ax.set_xticklabels(labels)
+
+
+def set_sci_ticks_y(ax, m, M, labels):
+    """
+    Set scientifc ticks for log plots between 10^m and 10^M,
+    with labels given by 10^labels.
+    """
+    exps = np.linspace(m, M, M-m + 1)
+    labels = [r'$10^{%d}$' % int(e) if check(e, labels) else '' for e in exps]
+    ax.set_yticks(10**exps)
+    ax.yaxis.set_minor_locator(mticker.LogLocator(numticks=99, subs="auto"))
+    ax.set_yticklabels(labels)
+
 
 
 # Load data
@@ -71,6 +114,17 @@ def get_time(folder):
     times = h5py.File(folder+"TIME")
     return np.array([times[k][()] for k in times.keys()])
 
+def get_Cq_saved(folder, seed=None, sub='', para_folder=None):
+    if not (seed is None): folder += "{m}/".format(m = seed) + sub
+    X, d, N, L, T, dt, con = get_para_folder(folder, para_folder)
+    q0 = rfftfreq(N, L  / (2 * np.pi * N))
+    data = h5py.File(folder+"Cabq")
+    keys = [k for k in data.keys()][1:]
+    C = np.array([data[k] for k in keys])
+    Cq = np.array([[[[Ctpab[0] + Ctpab[1] * 1j for Ctpab in Ctpa] for Ctpa in Ctp] for Ctp in Ct] for Ct in C])
+            
+    return q0, Cq, con, T, L, N, dt
+
 
 # Plotting
 
@@ -89,8 +143,10 @@ def update_plot(l, d, field):
     elif d==2: return l.set_array(field.ravel())
 
 
-def get_norm(field):
+def get_norm(field,norm_last=False):
     mm = [np.min(field), np.max(field)]
+    # If we want to set the norm by the last (in time) values
+    if norm_last: mm = [np.min(field[-1]), np.max(field[-1])]
     d = (mm[1] - mm[0]) / 2
     if d is np.nan: d = 1.
     mm[0] -= d * .1
@@ -131,8 +187,9 @@ def anim_fields(
 
 def anim_many_fields(
     folders,
-    SAVE=False, seed=0, ax_lst=None, interval=50, cmap=cm.viridis, rows=1,
-    name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, **kw
+    SAVE=False, seed=0, ax_lst=None, interval=50, cmap=cm.viridis, 
+    rows=1, name="vid", skip=1, fns=["varphi", ], size=6, lim=None, 
+    M=None, norm_last=False,  colorbar=False, **kw
     ):
 
     fields_arr = [[get_field(folder, fn) for fn in fns] for folder in folders] 
@@ -153,12 +210,14 @@ def anim_many_fields(
     for k in range(nn):
         fields = fields_arr[k]
         for i in range(Nf):
-            if (lim is None): mm = get_norm(fields[i])
+            if (lim is None): mm = get_norm(fields[i],norm_last=norm_last)
             else: mm = lim
             if isinstance(cmap, list): color = cmap[i]
             else: color = cmap
+            if isinstance(colorbar, list): cbar = colobar[i]
+            else: cbar = colorbar
 
-            li = plot_field(ax[k], d, X, fields[i][0], norm=mm, cmap=color, lw=1, **kw)
+            li = plot_field(ax[k], d, X, fields[i][0], norm=mm, cmap=color, lw=1, colorbar=cbar, **kw)
             l.append(li)
 
     def anim(n):
@@ -178,8 +237,8 @@ def anim_many_fields(
 
 def anim_fields_array(
     fields, para, 
-    SAVE=False, ax_lst=None, interval=1, cmap=cm.viridis,
-    name="vid", skip=1, fns=["varphi", ], size=6, lim=None, M=None, sqr=False, **kw
+    SAVE=False, ax_lst=None, interval=1, cmap=cm.viridis, norm_last=False, name="vid", 
+    skip=1, fns=["varphi", ], size=6, lim=None, M=None, sqr=False, colorbar=False, **kw
     ):
     X, d, N, L, T, dt, con = para
     if M is None: M = len(fields[0])
@@ -199,11 +258,16 @@ def anim_fields_array(
 
     l = []
     for i in range(Nf):
-        if (lim is None): mm = get_norm(fields[i])
-        else: mm = lim
+        if (lim is None): mm = get_norm(fields[i], norm_last=norm_last,)
+        else: 
+            if np.size(lim)==2: mm = lim
+            else: mm = lim[i]
         if isinstance(cmap, list): color = cmap[i]
         else: color = cmap
-        li = plot_field(ax[ax_lst[i]], d, X, fields[i][0], norm=mm, cmap=color, lw=1, **kw)
+        if isinstance(colorbar, list): cbar = colorbar[i]
+        else: cbar = colorbar
+
+        li = plot_field(ax[ax_lst[i]], d, X, fields[i][0], norm=mm, cmap=color, colorbar=cbar, lw=1, **kw)
         l.append(li)
 
     def anim(n):

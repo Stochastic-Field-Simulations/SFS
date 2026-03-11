@@ -217,11 +217,23 @@ mutable struct Field{d}
     k::Array{ComplexF64, d};
     conserved::Bool
 end
+Base.copy(f::Field) = Field(f.x, f.k, f.tools)
 
 const FieldArray{d} = Array{Field{d}, 1}
 const Fields{d} = Union{Field{d}, FieldArray{d}}
-function Base.getindex(A::Field, ::Nothing) return A end
-function Base.copy(f::Field) return Field(f.x, f.k, f.tools) end
+# These functions makes FieldArray of length 1 and a single Field behave the same.
+Base.getindex(A::Field, ::Nothing)                      = A
+Base.getindex(A::AbstractArray, ::Nothing)              = A
+Base.getindex(A::AbstractArray, ::Nothing, i::Any)      = A[i]
+Base.setindex!(A::AbstractArray, v, ::Nothing, i::Any)  = (checkbounds(A, i); A[i] = v)
+Base.checkbounds(::AbstractArray, ::Nothing)            = true
+Base.checkbounds(::AbstractArray, ::Nothing, ::Any)     = true
+Base.unsafe_view(A::AbstractArray, ::Nothing)           = A
+Base.unsafe_view(A::AbstractArray, ::Nothing, i::Any)   = @view A[i]
+
+Base.to_index(::Nothing)                    = nothing
+Base.CartesianIndex(::Nothing, ::Nothing)   = nothing
+
 
 function Field(tools::Tools, fx::Array{Float64})
     @unpack conserved = tools
