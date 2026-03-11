@@ -100,29 +100,30 @@ def get_CX_av(num, folder):
 
 def get_CX_Nf(seed, folder, get_K, Nf=2, conserved=False):
     run_folder = folder + "{m}/".format(m = seed)
-    field = np.array([get_field(run_folder, "varphi_"+str(a+1)) for a in range(Nf)])
-    phiqw = np.array([fftshift(fft2(field[a])) for a in range(Nf)])
     X, d, N, L, T, dt, con = get_para(run_folder)
-    M = len(phiqw[0])
     TIME = get_time(run_folder)[-1]
+    
+    field = np.array([get_field(run_folder, "varphi_"+str(a+1)) for a in range(Nf)])
+    M = len(field[0])
+    phiqw = np.array([fftshift(fft2(field[a]))  * (L/N) * (TIME/M) for a in range(Nf)])
+    
     param = T, N, M, L, TIME
-
     q, w = get_qw(param)
     mask = 0
     
     Cqw = np.zeros((Nf, Nf, *np.shape(q)), dtype=np.complex128) 
     for a in range(Nf):
         for b in range(Nf):
-            Cqw[a, b] = phiqw[a] * np.conj(phiqw[b]) / L / TIME * (L/N)**2 * (TIME/M)**2
+            Cqw[a, b] = phiqw[a] * np.conj(phiqw[b]) / L / TIME
             mask = (np.abs(Cqw[a, b])<1e-15) | mask
 
     Xqw = np.zeros((Nf, Nf, *np.shape(q)), dtype=np.complex128)
     K = get_K(field, con)
-    Kqw = np.array([fftshift(fft2(K[a])) - q**2 * phiqw[a] for a in range(Nf)])
+    Kqw = np.array([ fftshift(fft2(K[a]))*(L/N)*(TIME/M) - q**2*phiqw[a] for a in range(Nf) ])
     if conserved: Kqw = - q**2 * Kqw
     for a in range(Nf):
         for b in range(Nf):
-            Xqw[a,b] = (phiqw[a] * np.conj(-1j*w*phiqw[b] - Kqw[b]))/(2*T) * L/N**2*TIME/M**2
+            Xqw[a,b] = (phiqw[a] * np.conj(-1j*w*phiqw[b] - Kqw[b]))/(2*T) / L / TIME
     
     w = np.ma.array(w, mask=mask)
     q = np.ma.array(q, mask=mask)

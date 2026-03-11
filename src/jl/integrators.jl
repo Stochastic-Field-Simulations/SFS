@@ -61,8 +61,10 @@ function ETD!(fields::T1, tools::Tools, non_lin!::T2, con::T3, i::Int) where {T1
     @unpack fplan, bplan, rng, p2, step = tools
 
     if i==1 
-        if first_step!(step, fields, tools, f!, con); return nothing    # If we take first step, we skip the rest
-        else nothing end                                                # If not, we proceed
+        # If we take first step, we skip the rest
+        if first_step!(step, fields, tools, f!, con); return nothing
+        # If not, we proceed
+        else nothing end
     end
 
     non_lin!(fields, con, tools)
@@ -83,8 +85,10 @@ function ETDN!(fields::T1, tools::Tools, non_lin!::T2, con::T3, i::Int) where {T
     @unpack fplan, bplan, rng, p2, step = tools
 
     if i==1 
-        if first_stepN!(step, fields, tools, f!, con); return nothing   # If we take first step, we skip the rest
-        else nothing end                                                # If not, we proceed
+        # If we take first step, we skip the rest
+        if first_stepN!(step, fields, tools, f!, con); return nothing
+        # If not, we proceed
+        else nothing end
     end
 
     non_lin!(fields, con, tools)
