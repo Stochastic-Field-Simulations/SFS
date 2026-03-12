@@ -118,8 +118,7 @@ def get_CX_Nf(seed, folder, get_K, Nf=2, conserved=False):
             mask = (np.abs(Cqw[a, b])<1e-15) | mask
 
     Xqw = np.zeros((Nf, Nf, *np.shape(q)), dtype=np.complex128)
-    K = fftshift(get_K(field, con, q, w, param))
-    Kqw = np.array([ K[a] - q**2*phiqw[a] for a in range(Nf) ])
+    Kqw = get_K(field, con, q, w, param)
     if conserved: Kqw = - q**2 * Kqw
     for a in range(Nf):
         for b in range(Nf):
@@ -158,23 +157,6 @@ def get_phi_Nf_av(num, folder, Nf=2):
             phi2[a, b] = phi[a]*np.conj(phi[b])
     
     return phi2
-
-# def get_CX_Nf_av(num, folder, get_K, Nf=2):
-#     phi2 = get_phi_Nf_av(num, folder, Nf=Nf)
-
-#     (q, w), C, X, con, param = get_CX_Nf(1, folder, get_K, Nf=Nf)
-#     count = 1
-
-#     for i in range(1, num):
-#         Ci, Xi = get_CX_Nf(i+1, folder, get_K, Nf=Nf)[1:3] #- phi2
-#         C += Ci
-#         X += Xi
-#         count += 1
-        
-#     C = C / count
-#     X = X / count
-
-#     return (q, w), C, X, con, param
 
 def get_CX_Nf_av(num, folder, get_K, Nf=2, conserved=False):
     (q, w), C, X, con, param = get_CX_Nf(1, folder, get_K, Nf=Nf, conserved=conserved)
@@ -246,9 +228,9 @@ def plot_CXqw(C, X, q, w, param, wlim=None, qlim=None, size=12):
     return fig, ax
 
 
-def plot_Cqw_Nf(C, q, w, param, cm=cm.viridis, size=6, Nf=2):
+def plot_Cqw_Nf(C, q, w, param, cm=cm.viridis, size=6, Nf=2, ar=1.5, label="$C(q,\\omega)$"):
     T, N, M, L, TIME = param
-    fig, ax = plt.subplots(Nf, Nf, figsize=(size*1.4, size), sharex=True, sharey=True,  gridspec_kw=dict(hspace=0.0, wspace=0.0))
+    fig, ax = plt.subplots(Nf, Nf, figsize=(size*ar, size), gridspec_kw=dict(hspace=0.0, wspace=0.0))
     lim = np.max(np.abs(C))
 
     for a in range(Nf):
@@ -258,19 +240,22 @@ def plot_Cqw_Nf(C, q, w, param, cm=cm.viridis, size=6, Nf=2):
             ax[a,b].set_ylim(np.min(q), np.max(q))
 
     ax[-1, 0].set_xlabel("$\\omega$")
-    ax[-1, 0].set_ylabel("$q$")
+    ax[0, 0].set_ylabel("$q$")
+    for a in ax[-1, 1:]: a.set_xticks([])
+    for a in ax.flatten()[1:]: a.set_yticks([])
     
-    fig.colorbar(p, label="$C(q,\\omega)$", ax=ax)
+    fig.suptitle(label, x=.45)
+    fig.colorbar(p, ax=ax)
 
     plt.show()
 
 
-def plot_abs_Nf(C, q, w, param, size=6, Nf=2):
+def plot_abs_Nf(C, q, w, param, size=6, Nf=2, ar=1.5, label="$C(q,\\omega)$"):
     C = np.abs(C)
     lim = np.array([np.min(C[C>0]), np.max(C)])
     norm = colors.LogNorm(*lim)
     T, N, M, L, TIME = param
-    fig, ax = plt.subplots(Nf, Nf, figsize=(size*1.4, size), sharex=True, sharey=True, gridspec_kw=dict(hspace=0.0, wspace=0.0))
+    fig, ax = plt.subplots(Nf, Nf, figsize=(size*ar, size), gridspec_kw=dict(hspace=0.0, wspace=0.0))
 
     for a in range(Nf):
         for b in range(Nf):
@@ -278,7 +263,10 @@ def plot_abs_Nf(C, q, w, param, size=6, Nf=2):
             ax[a,b].set_ylim(np.min(q), np.max(q))
             
     ax[-1, 0].set_xlabel("$\\omega$")
-    ax[-1, 0].set_ylabel("$q$")
-    
-    fig.colorbar(p, label="$C(q,\\omega)$", ax=ax)
+    ax[0, 0].set_ylabel("$q$")
+    for a in ax[-1, 1:]: a.set_xticks([])
+    for a in ax.flatten()[1:]: a.set_yticks([])
+
+    fig.suptitle(label, x=.45)
+    fig.colorbar(p,  ax=ax)
     plt.show()
